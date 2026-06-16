@@ -1,7 +1,7 @@
 {
   "name": "ppdb-sman2-ngawi-dinamis",
   "version": "1.0.0",
-  "description": "Website dinamis Sistem Penerimaan Murid Baru SMAN 2 Ngawi menggunakan Node.js tanpa database eksternal.",
+  "description": "Website dinamis Sistem Penerimaan Murid Baru SMAN 2 Ngawi dengan fallback lokal dan dukungan Supabase.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

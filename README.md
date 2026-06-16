@@ -2,19 +2,22 @@
 
 Website PPDB dinamis berbasis **Node.js native** tanpa dependency tambahan. Cocok untuk dipush ke GitHub, dijalankan di laptop, VPS, atau disambungkan ke tunnel seperti LocalTunnel, Cloudflare Tunnel, atau Ngrok.
 
+Secara default data berjalan di file lokal `db/data.json`. Untuk hosting permanen, aplikasi bisa langsung memakai Supabase sebagai database dan storage dokumen.
+
 ## Fitur
 
 - Landing page PPDB dengan UI modern dan responsif.
 - Menu: Beranda, Alur, Jadwal, Persyaratan, Program, Daftar Sekarang, Cek Status, Peringkat, Admin, Kontak.
 - Form pendaftaran calon murid baru.
 - Nomor pendaftaran otomatis.
-- Data tersimpan dinamis di `db/data.json`.
+- Data tersimpan dinamis di `db/data.json` atau Supabase.
+- Upload dokumen pendaftaran tersimpan di folder lokal atau Supabase Storage.
 - Cek status memakai nomor pendaftaran atau NISN.
 - Peringkat nilai otomatis berdasarkan rumus:
   - **Nilai akhir = 60% nilai tes + 40% nilai rapor**
 - Filter dan pencarian ranking.
 - Panel admin demo untuk update nilai tes, status seleksi, catatan, ekspor CSV, dan reset data.
-- API backend siap disambungkan ke frontend lain atau dikembangkan ke database sungguhan.
+- API backend siap disambungkan ke frontend lain dan sudah mendukung Supabase.
 
 ## Cara Menjalankan
 
@@ -48,6 +51,23 @@ Pada Windows PowerShell:
 ```powershell
 $env:ADMIN_PASSWORD="passwordRahasia"; npm start
 ```
+
+## Database Supabase
+
+Mode lokal tidak membutuhkan database eksternal. Untuk hosting permanen, gunakan Supabase:
+
+1. Buat project baru di Supabase.
+2. Buka **SQL Editor** lalu jalankan isi file `supabase/schema.sql`.
+3. Buka **Project Settings > API** dan salin `Project URL` serta `service_role key`.
+4. Isi environment variable berikut di hosting:
+
+```text
+SUPABASE_URL=https://project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=service_role_key_dari_supabase
+SUPABASE_STORAGE_BUCKET=ppdb-documents
+```
+
+Jika variable Supabase tidak diisi, server otomatis kembali memakai `db/data.json` dan folder `uploads/`.
 
 ## Menyambungkan ke Tunnel
 
@@ -84,15 +104,17 @@ git push -u origin main
 
 ```text
 ppdb-sman2-ngawi-dinamis/
-├── server.js
-├── package.json
-├── README.md
-├── db/
-│   └── data.json
-└── public/
-    ├── index.html
-    ├── styles.css
-    └── app.js
+server.js
+package.json
+README.md
+db/
+  data.json
+public/
+  index.html
+  styles.css
+  app.js
+supabase/
+  schema.sql
 ```
 
 ## API Utama
@@ -104,6 +126,7 @@ ppdb-sman2-ngawi-dinamis/
 | GET | `/api/ranking` | Mengambil ranking peserta |
 | GET | `/api/status/:keyword` | Cek status dari nomor daftar atau NISN |
 | GET | `/api/admin/applicants` | Data admin semua pendaftar |
+| GET | `/api/admin/applicants/:registrationNumber/documents/:documentKey` | Unduh dokumen pendaftar |
 | PATCH | `/api/admin/applicants/:registrationNumber` | Update nilai/status/catatan |
 | GET | `/api/admin/export` | Ekspor CSV |
 | POST | `/api/admin/reset` | Reset ke data contoh |
@@ -116,11 +139,9 @@ x-admin-password: adminppdb
 
 ## Catatan Produksi
 
-Versi ini sudah dinamis, tetapi masih cocok untuk tahap prototype/ujicoba. Untuk dipakai resmi oleh sekolah, sebaiknya ditambahkan:
+Versi ini sudah mendukung database dan storage Supabase. Untuk dipakai resmi oleh sekolah, sebaiknya tetap ditambahkan:
 
 - Login admin yang lebih aman dengan session/JWT.
-- Database PostgreSQL/MySQL.
-- Upload dan validasi dokumen.
 - Role admin/operator/verifikator.
 - Audit log perubahan data.
 - HTTPS dan backup database.

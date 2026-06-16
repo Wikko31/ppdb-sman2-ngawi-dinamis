@@ -8,6 +8,10 @@ const PORT = Number(process.env.PORT || 3000);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminppdb';
 const SCHOOL_NAME = process.env.SCHOOL_NAME || 'SMAN 2 NGAWI';
 const REGISTRATION_YEAR = process.env.REGISTRATION_YEAR || '2026';
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+const SUPABASE_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+const SUPABASE_STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'ppdb-documents';
+const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 
 const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
@@ -182,7 +186,208 @@ function seedDatabase() {
   };
 }
 
+function mapMetaFromSupabase(row) {
+  return {
+    schoolName: row.school_name || SCHOOL_NAME,
+    registrationYear: row.registration_year || REGISTRATION_YEAR,
+    lastSequence: Number(row.last_sequence || 0),
+    createdAt: row.created_at || new Date().toISOString()
+  };
+}
+
+function mapMetaToSupabase(meta) {
+  return {
+    id: 'default',
+    school_name: meta.schoolName || SCHOOL_NAME,
+    registration_year: meta.registrationYear || REGISTRATION_YEAR,
+    last_sequence: Number(meta.lastSequence || 0),
+    created_at: meta.createdAt || new Date().toISOString()
+  };
+}
+
+function applicantRow(applicant) {
+  return {
+    registration_number: applicant.registrationNumber,
+    nisn: applicant.nisn,
+    data: applicant,
+    created_at: applicant.createdAt || new Date().toISOString(),
+    updated_at: applicant.updatedAt || new Date().toISOString()
+  };
+}
+
+function parseResponseBody(text) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function supabaseErrorMessage(data, fallback) {
+  if (data && typeof data === 'object') {
+    return data.message || data.details || data.hint || fallback;
+  }
+  return data || fallback;
+}
+
+async function supabaseRest(pathname, options = {}) {
+  if (typeof fetch !== 'function') {
+    throw new Error('Node.js 18 atau lebih baru diperlukan untuk koneksi Supabase.');
+  }
+
+  const hasBody = options.body !== undefined;
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+    method: options.method || 'GET',
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {})
+    },
+    body: hasBody ? JSON.stringify(options.body) : undefined
+  });
+  const text = await response.text();
+  const data = parseResponseBody(text);
+
+  if (!response.ok) {
+    throw new Error(supabaseErrorMessage(data, 'Gagal mengakses Supabase.'));
+  }
+
+  return data;
+}
+
+async function supabaseStorage(pathname, options = {}) {
+  if (typeof fetch !== 'function') {
+    throw new Error('Node.js 18 atau lebih baru diperlukan untuk koneksi Supabase.');
+  }
+
+  const hasJson = options.json !== undefined;
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/${pathname}`, {
+    method: options.method || 'GET',
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(hasJson ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {})
+    },
+    body: hasJson ? JSON.stringify(options.json) : options.body
+  });
+
+  if (options.raw && response.ok) {
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  const text = await response.text();
+  const data = parseResponseBody(text);
+  if (!response.ok) {
+    throw new Error(supabaseErrorMessage(data, 'Gagal mengakses Supabase Storage.'));
+  }
+
+  return data;
+}
+
+function postgrestValue(value) {
+  return encodeURIComponent(String(value));
+}
+
+function storagePath(value) {
+  return String(value).split('/').map(segment => encodeURIComponent(segment)).join('/');
+}
+
+async function ensureSupabaseDb() {
+  let rows;
+  try {
+    rows = await supabaseRest('ppdb_meta?id=eq.default&select=*');
+  } catch (error) {
+    throw new Error(`Supabase belum siap. Jalankan file supabase/schema.sql di SQL Editor Supabase. Detail: ${error.message}`);
+  }
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    await writeSupabaseDb(seedDatabase());
+  }
+}
+
+async function readSupabaseDb() {
+  await ensureSupabaseDb();
+  const [metaRows, applicantRows] = await Promise.all([
+    supabaseRest('ppdb_meta?id=eq.default&select=*'),
+    supabaseRest('ppdb_applicants?select=data&order=created_at.asc')
+  ]);
+
+  return {
+    meta: mapMetaFromSupabase(metaRows[0] || {}),
+    applicants: Array.isArray(applicantRows)
+      ? applicantRows.map(row => row.data).filter(Boolean)
+      : []
+  };
+}
+
+async function writeSupabaseDb(data) {
+  await supabaseRest('ppdb_meta?on_conflict=id', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates' },
+    body: mapMetaToSupabase(data.meta || {})
+  });
+
+  const currentRows = await supabaseRest('ppdb_applicants?select=registration_number');
+  const nextRegistrationNumbers = new Set((data.applicants || []).map(item => item.registrationNumber));
+  const staleRows = Array.isArray(currentRows)
+    ? currentRows.filter(row => !nextRegistrationNumbers.has(row.registration_number))
+    : [];
+
+  for (const row of staleRows) {
+    await supabaseRest(`ppdb_applicants?registration_number=eq.${postgrestValue(row.registration_number)}`, {
+      method: 'DELETE'
+    });
+  }
+
+  if (data.applicants && data.applicants.length) {
+    await supabaseRest('ppdb_applicants?on_conflict=registration_number', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates' },
+      body: data.applicants.map(applicantRow)
+    });
+  }
+}
+
+async function allocateRegistration(db) {
+  const fallbackSequence = Number(db.meta.lastSequence || 0) + 1;
+  if (!USE_SUPABASE) {
+    return {
+      sequence: fallbackSequence,
+      registrationNumber: makeRegistrationNumber(fallbackSequence)
+    };
+  }
+
+  try {
+    const result = await supabaseRest('rpc/ppdb_next_registration_number', {
+      method: 'POST',
+      body: { p_registration_year: REGISTRATION_YEAR }
+    });
+    const row = Array.isArray(result) ? result[0] : result;
+    if (row && row.registration_number && Number.isFinite(Number(row.last_sequence))) {
+      return {
+        sequence: Number(row.last_sequence),
+        registrationNumber: row.registration_number
+      };
+    }
+  } catch (error) {
+    console.warn(`Fungsi sequence Supabase tidak tersedia, memakai fallback aplikasi: ${error.message}`);
+  }
+
+  return {
+    sequence: fallbackSequence,
+    registrationNumber: makeRegistrationNumber(fallbackSequence)
+  };
+}
+
 async function ensureDb() {
+  if (USE_SUPABASE) {
+    await ensureSupabaseDb();
+    return;
+  }
+
   await fsp.mkdir(DB_DIR, { recursive: true });
   try {
     await fsp.access(DB_PATH, fs.constants.F_OK);
@@ -192,12 +397,21 @@ async function ensureDb() {
 }
 
 async function readDb() {
+  if (USE_SUPABASE) {
+    return readSupabaseDb();
+  }
+
   await ensureDb();
   const raw = await fsp.readFile(DB_PATH, 'utf8');
   return JSON.parse(raw);
 }
 
 async function writeDb(data) {
+  if (USE_SUPABASE) {
+    await writeSupabaseDb(data);
+    return;
+  }
+
   await fsp.mkdir(DB_DIR, { recursive: true });
   const tmpPath = `${DB_PATH}.tmp`;
   await fsp.writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf8');
@@ -510,6 +724,14 @@ function applicantUploadDir(registrationNumber) {
 }
 
 async function saveApplicantDocuments(registrationNumber, files) {
+  if (USE_SUPABASE) {
+    return saveSupabaseApplicantDocuments(registrationNumber, files);
+  }
+
+  return saveLocalApplicantDocuments(registrationNumber, files);
+}
+
+async function saveLocalApplicantDocuments(registrationNumber, files) {
   const documents = {};
   const targetDir = applicantUploadDir(registrationNumber);
   await fsp.mkdir(targetDir, { recursive: true });
@@ -537,7 +759,76 @@ async function saveApplicantDocuments(registrationNumber, files) {
   return documents;
 }
 
-async function clearUploadedDocuments() {
+async function saveSupabaseApplicantDocuments(registrationNumber, files) {
+  const documents = {};
+  const uploadedAt = new Date().toISOString();
+
+  for (const definition of documentDefinitions) {
+    const file = files[definition.key];
+    if (!file) continue;
+
+    const extension = path.extname(file.originalName).toLowerCase();
+    const fileName = `${definition.key}-${sanitizeFileName(file.originalName)}${extension}`;
+    const objectPath = `${registrationNumber}/${fileName}`;
+
+    await supabaseStorage(`object/${encodeURIComponent(SUPABASE_STORAGE_BUCKET)}/${storagePath(objectPath)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.mimeType || 'application/octet-stream',
+        'x-upsert': 'false'
+      },
+      body: file.buffer
+    });
+
+    documents[definition.key] = {
+      label: definition.label,
+      originalName: file.originalName,
+      fileName,
+      mimeType: file.mimeType,
+      size: file.size,
+      uploadedAt,
+      storageProvider: 'supabase',
+      storageBucket: SUPABASE_STORAGE_BUCKET,
+      storagePath: objectPath
+    };
+  }
+
+  return documents;
+}
+
+async function downloadSupabaseDocument(documentMeta) {
+  if (!documentMeta.storagePath) {
+    throw new Error('Path dokumen Supabase tidak tersedia.');
+  }
+
+  return supabaseStorage(`object/${encodeURIComponent(documentMeta.storageBucket || SUPABASE_STORAGE_BUCKET)}/${storagePath(documentMeta.storagePath)}`, {
+    raw: true
+  });
+}
+
+async function removeSupabaseDocuments(applicants = []) {
+  const paths = [];
+  for (const applicant of applicants) {
+    for (const documentMeta of Object.values(applicant.documents || {})) {
+      if (documentMeta && documentMeta.storageProvider === 'supabase' && documentMeta.storagePath) {
+        paths.push(documentMeta.storagePath);
+      }
+    }
+  }
+
+  if (!paths.length) return;
+
+  await supabaseStorage(`object/${encodeURIComponent(SUPABASE_STORAGE_BUCKET)}`, {
+    method: 'DELETE',
+    json: { prefixes: paths }
+  });
+}
+
+async function clearUploadedDocuments(applicants = []) {
+  if (USE_SUPABASE) {
+    await removeSupabaseDocuments(applicants);
+  }
+
   await fsp.rm(UPLOAD_DIR, { recursive: true, force: true });
   await fsp.mkdir(UPLOAD_DIR, { recursive: true });
 }
@@ -624,6 +915,8 @@ async function handleApi(req, res, url) {
       message: 'Server PPDB aktif.',
       schoolName: SCHOOL_NAME,
       registrationYear: REGISTRATION_YEAR,
+      database: USE_SUPABASE ? 'supabase' : 'local-json',
+      storage: USE_SUPABASE ? 'supabase-storage' : 'local-folder',
       time: new Date().toISOString()
     });
   }
@@ -649,9 +942,10 @@ async function handleApi(req, res, url) {
       });
     }
 
-    const nextSequence = Number(db.meta.lastSequence || 0) + 1;
+    const registration = await allocateRegistration(db);
+    const nextSequence = registration.sequence;
     const now = new Date().toISOString();
-    const registrationNumber = makeRegistrationNumber(nextSequence);
+    const registrationNumber = registration.registrationNumber;
     const documents = await saveApplicantDocuments(registrationNumber, files);
     const applicant = {
       registrationNumber,
@@ -773,17 +1067,22 @@ async function handleApi(req, res, url) {
         });
       }
 
-      const uploadDirectory = path.resolve(applicantUploadDir(registrationNumber));
-      const filePath = path.resolve(uploadDirectory, documentMeta.fileName);
-      if (!filePath.startsWith(`${uploadDirectory}${path.sep}`)) {
-        return sendJson(res, 403, {
-          success: false,
-          message: 'Akses dokumen ditolak.'
-        });
-      }
-
       try {
-        const body = await fsp.readFile(filePath);
+        let body;
+        if (documentMeta.storageProvider === 'supabase' && documentMeta.storagePath) {
+          body = await downloadSupabaseDocument(documentMeta);
+        } else {
+          const uploadDirectory = path.resolve(applicantUploadDir(registrationNumber));
+          const filePath = path.resolve(uploadDirectory, documentMeta.fileName);
+          if (!filePath.startsWith(`${uploadDirectory}${path.sep}`)) {
+            return sendJson(res, 403, {
+              success: false,
+              message: 'Akses dokumen ditolak.'
+            });
+          }
+          body = await fsp.readFile(filePath);
+        }
+
         res.writeHead(200, {
           'Content-Type': documentMeta.mimeType || 'application/octet-stream',
           'Content-Disposition': `attachment; filename="${sanitizeFileName(documentMeta.originalName)}${path.extname(documentMeta.originalName).toLowerCase()}"`,
@@ -857,8 +1156,9 @@ async function handleApi(req, res, url) {
 
   if (method === 'POST' && pathname === '/api/admin/reset') {
     if (!requireAdmin(req, res)) return;
+    const db = await readDb();
     const freshDb = seedDatabase();
-    await clearUploadedDocuments();
+    await clearUploadedDocuments(db.applicants);
     await writeDb(freshDb);
     return sendJson(res, 200, {
       success: true,
