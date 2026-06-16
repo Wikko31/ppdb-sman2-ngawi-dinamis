@@ -1,0 +1,21 @@
+{
+  "name": "ppdb-sman2-ngawi-dinamis",
+  "version": "1.0.0",
+  "description": "Website dinamis Sistem Penerimaan Murid Baru SMAN 2 Ngawi menggunakan Node.js tanpa database eksternal.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "ppdb",
+    "sman-2-ngawi",
+    "nodejs",
+    "web-dinamis"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

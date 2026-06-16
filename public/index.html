@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sistem Penerimaan Murid Baru SMAN 2 Ngawi - pendaftaran, cek status, peringkat hasil tes dan nilai." />
+  <title>PPDB SMAN 2 NGAWI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header" id="top">
+    <nav class="navbar container">
+      <a href="#beranda" class="brand" aria-label="PPDB SMAN 2 Ngawi">
+        <span class="brand-logo">2N</span>
+        <span>
+          <strong>PPDB SMADA NGAWI</strong>
+          <small>Sistem Penerimaan Murid Baru</small>
+        </span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Buka menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="nav-links" id="navLinks">
+        <a href="#beranda">Beranda</a>
+        <a href="#alur">Alur</a>
+        <a href="#jadwal">Jadwal</a>
+        <a href="#syarat">Syarat</a>
+        <a href="#program">Program</a>
+        <a href="#daftar" class="nav-cta">Daftar Sekarang</a>
+        <a href="#cek-status">Cek Status</a>
+        <a href="#peringkat">Peringkat</a>
+        <a href="#admin">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero section" id="beranda">
+      <div class="container hero-grid">
+        <div class="hero-content reveal">
+          <p class="eyebrow">PPDB Online 2026/2027</p>
+          <h1>Daftar ke <span>SMAN 2 NGAWI</span> lebih mudah, cepat, dan transparan.</h1>
+          <p class="hero-subtitle">
+            Sistem informasi pendaftaran murid baru untuk pendaftaran, cek status verifikasi, pemantauan nilai tes, dan peringkat seleksi secara real-time.
+          </p>
+          <div class="hero-actions">
+            <a href="#daftar" class="btn btn-primary">Daftar Sekarang</a>
+            <a href="#peringkat" class="btn btn-soft">Lihat Peringkat</a>
+          </div>
+          <div class="hero-note">
+            <span>✓ Pendaftaran terintegrasi</span>
+            <span>✓ Verifikasi terpantau</span>
+            <span>✓ Informasi seleksi transparan</span>
+          </div>
+        </div>
+
+        <aside class="hero-card glass-card reveal">
+          <div class="admission-card-top">
+            <span class="badge">PPDB Dibuka</span>
+            <span class="date-pill">1 Jun - 5 Jul 2026</span>
+          </div>
+          <h2>Kuota Jalur</h2>
+          <div class="quota-list">
+            <div><strong>60%</strong><span>Prestasi & Akademik</span></div>
+            <div><strong>25%</strong><span>Zonasi</span></div>
+            <div><strong>10%</strong><span>Afirmasi</span></div>
+            <div><strong>5%</strong><span>Perpindahan Orang Tua</span></div>
+          </div>
+          <a href="#jadwal" class="inline-link">Lihat jadwal lengkap →</a>
+        </aside>
+      </div>
+      <div class="hero-shape shape-one"></div>
+      <div class="hero-shape shape-two"></div>
+    </section>
+
+    <section class="stats container" aria-label="Statistik PPDB">
+      <article>
+        <strong id="statApplicants">0</strong>
+        <span>Pendaftar</span>
+      </article>
+      <article>
+        <strong id="statVerified">0</strong>
+        <span>Terverifikasi</span>
+      </article>
+      <article>
+        <strong>288</strong>
+        <span>Estimasi Kuota</span>
+      </article>
+      <article>
+        <strong>A</strong>
+        <span>Akreditasi</span>
+      </article>
+    </section>
+
+    <section class="section container" id="fitur">
+      <div class="section-heading">
+        <p class="eyebrow">Fitur Utama</p>
+        <h2>Satu portal untuk seluruh proses penerimaan siswa baru.</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card reveal">
+          <span class="icon">📝</span>
+          <h3>Pendaftaran Online</h3>
+          <p>Calon siswa mengisi data diri, asal sekolah, jalur pendaftaran, dan nilai rapor.</p>
+        </article>
+        <article class="feature-card reveal">
+          <span class="icon">📊</span>
+          <h3>Ranking Otomatis</h3>
+          <p>Peringkat dihitung otomatis dari nilai tes dan rata-rata rapor.</p>
+        </article>
+        <article class="feature-card reveal">
+          <span class="icon">🔎</span>
+          <h3>Cek Status</h3>
+          <p>Siswa dapat memantau status melalui nomor pendaftaran atau NISN.</p>
+        </article>
+        <article class="feature-card reveal">
+          <span class="icon">🛡️</span>
+          <h3>Panel Admin</h3>
+          <p>Admin dapat memperbarui nilai, status, catatan, serta mengekspor data pendaftar.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section muted-section" id="alur">
+      <div class="container">
+        <div class="section-heading center">
+          <p class="eyebrow">Alur Pendaftaran</p>
+          <h2>Lima langkah mudah menuju SMAN 2 Ngawi.</h2>
+        </div>
+        <div class="steps">
+          <article class="reveal"><span>01</span><h3>Isi Formulir</h3><p>Lengkapi data calon siswa dengan benar dan aktif.</p></article>
+          <article class="reveal"><span>02</span><h3>Verifikasi</h3><p>Panitia memeriksa data dan kelengkapan berkas.</p></article>
+          <article class="reveal"><span>03</span><h3>Tes Seleksi</h3><p>Ikuti tes akademik atau proses seleksi sekolah.</p></article>
+          <article class="reveal"><span>04</span><h3>Lihat Ranking</h3><p>Ranking dan nilai akhir dapat dipantau online.</p></article>
+          <article class="reveal"><span>05</span><h3>Daftar Ulang</h3><p>Peserta diterima menyelesaikan administrasi akhir.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container" id="jadwal">
+      <div class="section-heading">
+        <p class="eyebrow">Jadwal PPDB</p>
+        <h2>Tanggal penting yang perlu diperhatikan.</h2>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item active reveal"><span>1 - 20 Jun 2026</span><h3>Pendaftaran Online</h3><p>Pengisian formulir dan input data calon siswa.</p></div>
+        <div class="timeline-item reveal"><span>21 - 25 Jun 2026</span><h3>Verifikasi Berkas</h3><p>Validasi data oleh panitia PPDB sekolah.</p></div>
+        <div class="timeline-item reveal"><span>27 Jun 2026</span><h3>Tes Seleksi</h3><p>Tes akademik dan pemetaan minat siswa.</p></div>
+        <div class="timeline-item reveal"><span>30 Jun 2026</span><h3>Pengumuman</h3><p>Peringkat final dan status diterima diumumkan.</p></div>
+        <div class="timeline-item reveal"><span>1 - 5 Jul 2026</span><h3>Daftar Ulang</h3><p>Peserta diterima melengkapi administrasi akhir.</p></div>
+      </div>
+    </section>
+
+    <section class="section muted-section" id="syarat">
+      <div class="container two-column">
+        <div class="reveal">
+          <p class="eyebrow">Persyaratan</p>
+          <h2>Siapkan dokumen sebelum mendaftar.</h2>
+          <p class="lead">Pastikan semua data benar agar proses verifikasi berjalan lancar.</p>
+        </div>
+        <div class="requirement-card reveal">
+          <ul class="check-list">
+            <li>Kartu keluarga.</li>
+            <li>Akta kelahiran.</li>
+            <li>Rapor semester 1-5 atau surat keterangan nilai.</li>
+            <li>NISN aktif dan data sesuai Dapodik.</li>
+            <li>Pas foto terbaru ukuran 3x4.</li>
+            <li>Sertifikat prestasi, khusus jalur prestasi.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container" id="program">
+      <div class="section-heading center">
+        <p class="eyebrow">Program Sekolah</p>
+        <h2>Lingkungan belajar yang mendukung masa depanmu.</h2>
+      </div>
+      <div class="program-grid">
+        <article class="reveal"><h3>Akademik Unggul</h3><p>Pembelajaran berbasis literasi, numerasi, riset, dan persiapan perguruan tinggi.</p></article>
+        <article class="reveal"><h3>Ekstrakurikuler</h3><p>OSIS, Pramuka, Paskibra, olahraga, seni, jurnalistik, dan komunitas teknologi.</p></article>
+        <article class="reveal"><h3>Karakter & Kepemimpinan</h3><p>Penguatan disiplin, kolaborasi, tanggung jawab, dan kepedulian sosial.</p></article>
+      </div>
+    </section>
+
+    <section class="section form-section" id="daftar">
+      <div class="container form-layout">
+        <div class="form-intro reveal">
+          <p class="eyebrow">Daftar Sekarang</p>
+          <h2>Formulir Pendaftaran Calon Murid Baru.</h2>
+          <p>Lengkapi data pendaftaran dan unggah dokumen persyaratan. Setelah berhasil, siswa mendapat nomor pendaftaran otomatis.</p>
+          <div class="tips-card">
+            <strong>Tips:</strong>
+            <span>Gunakan nomor HP aktif, tulis nilai rapor dalam skala 0-100, dan unggah dokumen berformat PDF/JPG/PNG.</span>
+          </div>
+        </div>
+
+        <form class="registration-form reveal" id="registrationForm" enctype="multipart/form-data">
+          <div class="form-grid">
+            <label>Nama Lengkap<input type="text" name="name" placeholder="Contoh: Bima Arya Pratama" required /></label>
+            <label>NISN<input type="text" name="nisn" placeholder="Contoh: 0087654321" minlength="8" maxlength="12" required /></label>
+            <label>Asal Sekolah<input type="text" name="school" placeholder="SMP/MTs asal" required /></label>
+            <label>Tanggal Lahir<input type="date" name="birthDate" required /></label>
+            <label>Jenis Kelamin<select name="gender" required><option value="">Pilih</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></label>
+            <label>Jalur Pendaftaran<select name="pathway" id="pathwaySelect" required><option value="">Pilih jalur</option><option value="Prestasi">Prestasi</option><option value="Zonasi">Zonasi</option><option value="Afirmasi">Afirmasi</option><option value="Perpindahan Orang Tua">Perpindahan Orang Tua</option></select></label>
+            <label>Rata-rata Nilai Rapor<input type="number" name="reportScore" min="0" max="100" step="0.01" placeholder="Contoh: 86.50" required /></label>
+            <label>No. HP/WhatsApp<input type="tel" name="phone" placeholder="08xxxxxxxxxx" required /></label>
+            <label class="full">Email<input type="email" name="email" placeholder="nama@email.com" required /></label>
+            <label class="full">Alamat Lengkap<textarea name="address" rows="3" placeholder="Alamat sesuai KK" required></textarea></label>
+            <label class="full">Catatan Prestasi/Minat<textarea name="achievement" rows="3" placeholder="Opsional: prestasi, minat jurusan, atau ekstrakurikuler"></textarea></label>
+            <fieldset class="document-fields full">
+              <legend>Dokumen Persyaratan</legend>
+              <p class="field-hint">Format PDF/JPG/PNG, maksimal 5 MB per file. Pas foto hanya JPG/PNG.</p>
+              <div class="document-grid">
+                <label>Kartu Keluarga<input type="file" name="familyCard" accept=".pdf,.jpg,.jpeg,.png" required /></label>
+                <label>Akta Kelahiran<input type="file" name="birthCertificate" accept=".pdf,.jpg,.jpeg,.png" required /></label>
+                <label>Rapor Semester 1-5 / Keterangan Nilai<input type="file" name="reportDocument" accept=".pdf,.jpg,.jpeg,.png" required /></label>
+                <label>Bukti NISN Aktif dan Data Dapodik<input type="file" name="nisnProof" accept=".pdf,.jpg,.jpeg,.png" required /></label>
+                <label>Pas Foto Terbaru 3x4<input type="file" name="photo" accept=".jpg,.jpeg,.png" required /></label>
+                <label>Sertifikat Prestasi <span id="achievementRequiredText" class="optional-text">(wajib untuk jalur Prestasi)</span><input type="file" name="achievementCertificate" id="achievementCertificate" accept=".pdf,.jpg,.jpeg,.png" /></label>
+              </div>
+            </fieldset>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Kirim Pendaftaran</button>
+            <button type="reset" class="btn btn-ghost">Reset</button>
+          </div>
+          <p class="form-message" id="formMessage"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section container" id="cek-status">
+      <div class="section-heading">
+        <p class="eyebrow">Cek Status</p>
+        <h2>Pantau proses seleksimu.</h2>
+      </div>
+      <div class="status-box reveal">
+        <div class="search-row">
+          <input type="text" id="statusKeyword" placeholder="Masukkan nomor pendaftaran atau NISN" />
+          <button class="btn btn-primary" id="checkStatusBtn">Cek Status</button>
+        </div>
+        <div id="statusResult" class="status-result empty">Masukkan nomor pendaftaran atau NISN untuk melihat status.</div>
+      </div>
+    </section>
+
+    <section class="section muted-section" id="peringkat">
+      <div class="container">
+        <div class="table-header">
+          <div>
+            <p class="eyebrow">Peringkat Seleksi</p>
+            <h2>Ranking hasil tes dan nilai akhir.</h2>
+            <p class="lead">Nilai akhir = 60% nilai tes + 40% rata-rata rapor. Peserta tanpa nilai tes belum masuk ranking final.</p>
+          </div>
+          <div class="table-tools">
+            <input type="search" id="rankingSearch" placeholder="Cari nama/NISN/jalur" />
+            <select id="pathwayFilter"><option value="">Semua Jalur</option><option value="Prestasi">Prestasi</option><option value="Zonasi">Zonasi</option><option value="Afirmasi">Afirmasi</option><option value="Perpindahan Orang Tua">Perpindahan Orang Tua</option></select>
+          </div>
+        </div>
+        <div class="table-card reveal">
+          <table>
+            <thead><tr><th>Rank</th><th>No. Daftar</th><th>Nama</th><th>Jalur</th><th>Rapor</th><th>Tes</th><th>Nilai Akhir</th><th>Status</th></tr></thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container" id="admin">
+      <div class="admin-panel reveal">
+        <div>
+          <p class="eyebrow">Panel Admin</p>
+          <h2>Kelola data pendaftar.</h2>
+          <p class="lead">Masuk menggunakan kredensial admin untuk mengelola data pendaftaran.</p>
+        </div>
+        <div class="admin-login" id="adminLogin">
+          <input type="password" id="adminPassword" placeholder="Password admin" />
+          <button class="btn btn-primary" id="adminLoginBtn">Masuk Admin</button>
+        </div>
+        <div class="admin-area hidden" id="adminArea">
+          <div class="admin-actions">
+            <button class="btn btn-soft" id="exportCsvBtn">Ekspor CSV</button>
+            <button class="btn btn-ghost" id="resetDataBtn">Reset Data</button>
+            <button class="btn btn-ghost" id="logoutAdminBtn">Keluar Admin</button>
+          </div>
+          <div class="table-card compact">
+            <table>
+              <thead><tr><th>No. Daftar</th><th>Nama</th><th>Nilai Tes</th><th>Status</th><th>Catatan</th><th>Dokumen</th><th>Aksi</th></tr></thead>
+              <tbody id="adminBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="form-message" id="adminMessage"></p>
+      </div>
+    </section>
+
+    <section class="section muted-section" id="faq">
+      <div class="container">
+        <div class="section-heading center">
+          <p class="eyebrow">FAQ</p>
+          <h2>Pertanyaan yang sering ditanyakan.</h2>
+        </div>
+        <div class="faq-list">
+          <details class="reveal"><summary>Bagaimana alur pendaftaran?</summary><p>Calon peserta didik mengisi formulir pendaftaran, lalu panitia melakukan verifikasi dan memperbarui status seleksi.</p></details>
+          <details class="reveal"><summary>Bagaimana cara memantau hasil seleksi?</summary><p>Peserta dapat mengecek status verifikasi, nilai tes, dan peringkat sementara melalui nomor pendaftaran.</p></details>
+          <details class="reveal"><summary>Dokumen apa yang perlu disiapkan?</summary><p>Siapkan kartu keluarga, akta kelahiran, rapor, pas foto, dan dokumen pendukung lain sesuai ketentuan sekolah.</p></details>
+          <details class="reveal"><summary>Siapa yang dapat dihubungi?</summary><p>Hubungi panitia PPDB SMAN 2 NGAWI untuk informasi resmi mengenai jadwal, persyaratan, dan proses seleksi.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact-section" id="kontak">
+      <div class="container contact-grid">
+        <div class="reveal">
+          <p class="eyebrow">Kontak Panitia</p>
+          <h2>Butuh bantuan pendaftaran?</h2>
+          <p>Hubungi panitia PPDB SMAN 2 Ngawi pada jam kerja sekolah.</p>
+        </div>
+        <div class="contact-card reveal">
+          <p><strong>Alamat:</strong> Jl. Ahmad Yani, Ngawi, Jawa Timur</p>
+          <p><strong>Telepon:</strong> (0351) 000000</p>
+          <p><strong>Email:</strong> ppdb@sman2ngawi.sch.id</p>
+          <p><strong>Jam Layanan:</strong> Senin-Jumat, 08.00-14.00 WIB</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <button class="back-to-top" id="backToTop" aria-label="Kembali ke atas">↑</button>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p>© 2026 PPDB SMAN 2 NGAWI. Sistem penerimaan murid baru.</p>
+      <a href="#top">Kembali ke atas</a>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
