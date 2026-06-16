@@ -72,3 +72,7 @@ end;
 $$;
 
 grant execute on function public.ppdb_next_registration_number(text) to service_role;
+
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.ppdb_meta to service_role;
+grant select, insert, update, delete on public.ppdb_applicants to service_role;

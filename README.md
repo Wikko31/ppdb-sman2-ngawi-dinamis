@@ -52,6 +52,8 @@ Pada Windows PowerShell:
 $env:ADMIN_PASSWORD="passwordRahasia"; npm start
 ```
 
+Server juga otomatis membaca file `.env` lokal jika tersedia.
+
 ## Database Supabase
 
 Mode lokal tidak membutuhkan database eksternal. Untuk hosting permanen, gunakan Supabase:
