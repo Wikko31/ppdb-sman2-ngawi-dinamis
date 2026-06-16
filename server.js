@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
+const crypto = require('crypto');
 const { URL } = require('url');
 
 const ROOT_DIR = __dirname;
@@ -36,12 +37,18 @@ function loadEnvFile(rootDir) {
 loadEnvFile(ROOT_DIR);
 
 const PORT = Number(process.env.PORT || 3000);
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminppdb';
 const SCHOOL_NAME = process.env.SCHOOL_NAME || 'SMAN 2 NGAWI';
 const REGISTRATION_YEAR = process.env.REGISTRATION_YEAR || '2026';
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const SUPABASE_STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'ppdb-documents';
+const ADMIN_SESSION_TTL_MS = Number(process.env.ADMIN_SESSION_TTL_MS || 8 * 60 * 60 * 1000);
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET ||
+  SUPABASE_SERVICE_ROLE_KEY ||
+  crypto.createHash('sha256').update(`${ADMIN_PASSWORD}:${ROOT_DIR}`).digest('hex');
+const ALLOW_LEGACY_ADMIN_PASSWORD = process.env.ALLOW_LEGACY_ADMIN_PASSWORD === 'true';
 const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
@@ -879,20 +886,238 @@ function documentList(documents = {}) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function formatDateOnly(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  }).format(date);
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function formatProofScore(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  return Number(value).toFixed(2).replace(/\.00$/, '');
+}
+
+function proofRow(label, value) {
+  return `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value || '-')}</td></tr>`;
+}
+
+function renderProofDocument(applicant) {
+  const publicData = publicApplicant(applicant);
+  const documents = documentList(applicant.documents);
+  const documentRows = documents.map(document => `
+    <tr>
+      <td>${escapeHtml(document.label)}</td>
+      <td>${document.uploaded ? 'Sudah diunggah' : 'Belum diunggah'}</td>
+      <td>${escapeHtml(document.originalName || '-')}</td>
+    </tr>
+  `).join('');
+
+  return `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bukti Pendaftaran ${escapeHtml(publicData.registrationNumber)}</title>
+  <style>
+    @page { margin: 18mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; color: #102033; background: #f6faf9; line-height: 1.5; }
+    .page { width: min(900px, calc(100% - 32px)); margin: 32px auto; background: #fff; border: 1px solid #d9e6e3; border-radius: 18px; padding: 34px; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08); }
+    .toolbar { width: min(900px, calc(100% - 32px)); margin: 24px auto 0; display: flex; justify-content: flex-end; gap: 10px; }
+    .button { border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 700; cursor: pointer; text-decoration: none; color: #fff; background: #0f766e; }
+    .button.secondary { color: #102033; background: #fff; border: 1px solid #d9e6e3; }
+    header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 3px solid #0f766e; padding-bottom: 20px; margin-bottom: 24px; }
+    .kicker { margin: 0 0 4px; color: #0f766e; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 28px; line-height: 1.15; }
+    .number { text-align: right; font-size: 13px; color: #65758b; }
+    .number strong { display: block; color: #102033; font-size: 20px; }
+    .status { display: inline-block; margin-top: 8px; border-radius: 999px; padding: 6px 10px; color: #0f766e; background: #e0f7f3; font-weight: 800; }
+    .section { margin-top: 22px; }
+    h2 { margin: 0 0 10px; font-size: 17px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #d9e6e3; padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { width: 34%; background: #f8fafc; color: #65758b; }
+    .documents th { width: auto; }
+    footer { margin-top: 24px; color: #65758b; font-size: 12px; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .page { width: 100%; margin: 0; border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <a class="button secondary" href="/">Kembali</a>
+    <button class="button" type="button" onclick="window.print()">Cetak Bukti</button>
+  </div>
+  <main class="page">
+    <header>
+      <div>
+        <p class="kicker">Bukti Pendaftaran PPDB</p>
+        <h1>${escapeHtml(SCHOOL_NAME)}</h1>
+        <p>Tahun pendaftaran ${escapeHtml(REGISTRATION_YEAR)}</p>
+      </div>
+      <div class="number">
+        Nomor Pendaftaran
+        <strong>${escapeHtml(publicData.registrationNumber)}</strong>
+        <span class="status">${escapeHtml(publicData.status)}</span>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>Data Calon Peserta Didik</h2>
+      <table>
+        <tbody>
+          ${proofRow('Nama Lengkap', publicData.name)}
+          ${proofRow('NISN', publicData.nisn)}
+          ${proofRow('Asal Sekolah', publicData.school)}
+          ${proofRow('Tanggal Lahir', formatDateOnly(publicData.birthDate))}
+          ${proofRow('Jenis Kelamin', publicData.gender)}
+          ${proofRow('Jalur Pendaftaran', publicData.pathway)}
+          ${proofRow('No. Telepon', publicData.phone)}
+          ${proofRow('Email', publicData.email)}
+          ${proofRow('Alamat', publicData.address)}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Nilai dan Status</h2>
+      <table>
+        <tbody>
+          ${proofRow('Nilai Rapor', formatProofScore(publicData.reportScore))}
+          ${proofRow('Nilai Tes', formatProofScore(publicData.testScore))}
+          ${proofRow('Nilai Akhir', formatProofScore(publicData.finalScore))}
+          ${proofRow('Prestasi', publicData.achievement)}
+          ${proofRow('Catatan Panitia', publicData.notes)}
+          ${proofRow('Waktu Pendaftaran', formatDateTime(publicData.createdAt))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Kelengkapan Dokumen</h2>
+      <table class="documents">
+        <thead><tr><th>Dokumen</th><th>Status</th><th>Nama File</th></tr></thead>
+        <tbody>${documentRows}</tbody>
+      </table>
+    </section>
+
+    <footer>
+      Bukti ini dibuat otomatis oleh sistem PPDB ${escapeHtml(SCHOOL_NAME)} pada ${escapeHtml(formatDateTime(new Date().toISOString()))}.
+      Simpan nomor pendaftaran untuk memantau status seleksi.
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
 function makeRegistrationNumber(sequence) {
   return `PPDB-${REGISTRATION_YEAR}-${String(sequence).padStart(4, '0')}`;
 }
 
+function base64UrlJson(value) {
+  return Buffer.from(JSON.stringify(value)).toString('base64url');
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ''));
+  const rightBuffer = Buffer.from(String(right || ''));
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function signAdminPayload(payload) {
+  return crypto
+    .createHmac('sha256', ADMIN_SESSION_SECRET)
+    .update(payload)
+    .digest('base64url');
+}
+
+function createAdminToken(username) {
+  const now = Date.now();
+  const payload = base64UrlJson({
+    sub: username,
+    iat: now,
+    exp: now + ADMIN_SESSION_TTL_MS
+  });
+
+  return {
+    token: `${payload}.${signAdminPayload(payload)}`,
+    expiresAt: new Date(now + ADMIN_SESSION_TTL_MS).toISOString()
+  };
+}
+
+function verifyAdminToken(token) {
+  const [payload, signature, extra] = String(token || '').split('.');
+  if (!payload || !signature || extra) return null;
+  if (!safeEqual(signature, signAdminPayload(payload))) return null;
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!safeEqual(session.sub, ADMIN_USERNAME)) return null;
+    if (!Number.isFinite(Number(session.exp)) || Date.now() > Number(session.exp)) return null;
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function adminSessionFromRequest(req) {
+  const authorization = req.headers.authorization || '';
+  const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  const headerToken = req.headers['x-admin-token'];
+  return verifyAdminToken(bearerToken || headerToken);
+}
+
 function isAuthorized(req) {
-  const headerPassword = req.headers['x-admin-password'];
-  return Boolean(headerPassword && headerPassword === ADMIN_PASSWORD);
+  const session = adminSessionFromRequest(req);
+  if (session) {
+    req.adminSession = session;
+    return true;
+  }
+
+  if (ALLOW_LEGACY_ADMIN_PASSWORD) {
+    const headerPassword = req.headers['x-admin-password'];
+    return Boolean(headerPassword && safeEqual(headerPassword, ADMIN_PASSWORD));
+  }
+
+  return false;
 }
 
 function requireAdmin(req, res) {
   if (!isAuthorized(req)) {
     sendJson(res, 401, {
       success: false,
-      message: 'Akses admin ditolak. Password admin tidak valid.'
+      message: 'Sesi admin tidak valid atau sudah kedaluwarsa.'
     });
     return false;
   }
@@ -948,6 +1173,37 @@ async function handleApi(req, res, url) {
       database: USE_SUPABASE ? 'supabase' : 'local-json',
       storage: USE_SUPABASE ? 'supabase-storage' : 'local-folder',
       time: new Date().toISOString()
+    });
+  }
+
+  if (method === 'POST' && pathname === '/api/admin/login') {
+    const payload = await parseBody(req);
+    const username = normalizeText(payload.username);
+    const password = normalizeText(payload.password);
+
+    if (!safeEqual(username, ADMIN_USERNAME) || !safeEqual(password, ADMIN_PASSWORD)) {
+      return sendJson(res, 401, {
+        success: false,
+        message: 'Username atau password admin tidak valid.'
+      });
+    }
+
+    const session = createAdminToken(ADMIN_USERNAME);
+    return sendJson(res, 200, {
+      success: true,
+      message: 'Login admin berhasil.',
+      username: ADMIN_USERNAME,
+      token: session.token,
+      expiresAt: session.expiresAt
+    });
+  }
+
+  if (method === 'GET' && pathname === '/api/admin/me') {
+    if (!requireAdmin(req, res)) return;
+    return sendJson(res, 200, {
+      success: true,
+      username: ADMIN_USERNAME,
+      expiresAt: req.adminSession ? new Date(Number(req.adminSession.exp)).toISOString() : null
     });
   }
 
@@ -1203,6 +1459,24 @@ async function handleApi(req, res, url) {
   });
 }
 
+async function serveRegistrationProof(req, res, url) {
+  const registrationNumber = decodeURIComponent(url.pathname.replace('/bukti/', '')).trim();
+  if (!registrationNumber) {
+    return sendText(res, 400, 'Nomor pendaftaran tidak valid.');
+  }
+
+  const db = await readDb();
+  const applicant = db.applicants.find(item =>
+    String(item.registrationNumber).toLowerCase() === registrationNumber.toLowerCase()
+  );
+
+  if (!applicant) {
+    return sendText(res, 404, 'Data pendaftaran tidak ditemukan.');
+  }
+
+  return sendText(res, 200, renderProofDocument(applicant), 'text/html; charset=utf-8');
+}
+
 async function serveStatic(req, res, url) {
   let pathname = decodeURIComponent(url.pathname);
   if (pathname === '/') pathname = '/index.html';
@@ -1244,6 +1518,11 @@ async function requestHandler(req, res) {
       return;
     }
 
+    if (url.pathname.startsWith('/bukti/')) {
+      await serveRegistrationProof(req, res, url);
+      return;
+    }
+
     await serveStatic(req, res, url);
   } catch (error) {
     console.error(error);
@@ -1258,7 +1537,7 @@ ensureDb()
   .then(() => {
     http.createServer(requestHandler).listen(PORT, () => {
       console.log(`PPDB ${SCHOOL_NAME} berjalan di http://localhost:${PORT}`);
-      console.log(`Password admin: ${ADMIN_PASSWORD}`);
+      console.log(`Username admin: ${ADMIN_USERNAME}`);
     });
   })
   .catch(error => {

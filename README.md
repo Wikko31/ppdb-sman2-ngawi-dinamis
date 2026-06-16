@@ -1,6 +1,6 @@
 # Sistem Penerimaan Murid Baru SMAN 2 Ngawi - Web Dinamis
 
-Website PPDB dinamis berbasis **Node.js native** tanpa dependency tambahan. Cocok untuk dipush ke GitHub, dijalankan di laptop, VPS, atau disambungkan ke tunnel seperti LocalTunnel, Cloudflare Tunnel, atau Ngrok.
+Website PPDB dinamis berbasis **Node.js native** tanpa dependency tambahan. Cocok untuk dipush ke GitHub, dijalankan di laptop, VPS, atau hosting Node.js lain.
 
 Secara default data berjalan di file lokal `db/data.json`. Untuk hosting permanen, aplikasi bisa langsung memakai Supabase sebagai database dan storage dokumen.
 
@@ -13,10 +13,11 @@ Secara default data berjalan di file lokal `db/data.json`. Untuk hosting permane
 - Data tersimpan dinamis di `db/data.json` atau Supabase.
 - Upload dokumen pendaftaran tersimpan di folder lokal atau Supabase Storage.
 - Cek status memakai nomor pendaftaran atau NISN.
+- Bukti pendaftaran dapat dibuka dan dicetak dari nomor pendaftaran.
 - Peringkat nilai otomatis berdasarkan rumus:
   - **Nilai akhir = 60% nilai tes + 40% nilai rapor**
 - Filter dan pencarian ranking.
-- Panel admin demo untuk update nilai tes, status seleksi, catatan, ekspor CSV, dan reset data.
+- Panel admin berbasis username, password, dan token sesi untuk update nilai tes, status seleksi, catatan, ekspor CSV, dan reset data.
 - API backend siap disambungkan ke frontend lain dan sudah mendukung Supabase.
 
 ## Cara Menjalankan
@@ -34,22 +35,23 @@ Buka browser:
 http://localhost:3000
 ```
 
-Password admin demo:
+Kredensial admin default:
 
 ```text
-adminppdb
+Username: admin
+Password: adminppdb
 ```
 
-Anda bisa mengganti password admin melalui environment variable:
+Anda bisa mengganti kredensial admin melalui environment variable:
 
 ```bash
-ADMIN_PASSWORD=passwordRahasia npm start
+ADMIN_USERNAME=operator ADMIN_PASSWORD=passwordRahasia ADMIN_SESSION_SECRET=teksRahasiaPanjang npm start
 ```
 
 Pada Windows PowerShell:
 
 ```powershell
-$env:ADMIN_PASSWORD="passwordRahasia"; npm start
+$env:ADMIN_USERNAME="operator"; $env:ADMIN_PASSWORD="passwordRahasia"; $env:ADMIN_SESSION_SECRET="teksRahasiaPanjang"; npm start
 ```
 
 Server juga otomatis membaca file `.env` lokal jika tersedia.
@@ -67,6 +69,18 @@ Mode lokal tidak membutuhkan database eksternal. Untuk hosting permanen, gunakan
 SUPABASE_URL=https://project-id.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=service_role_key_dari_supabase
 SUPABASE_STORAGE_BUCKET=ppdb-documents
+```
+
+Migrasi data awal dari `db/data.json` ke Supabase:
+
+```bash
+npm run migrate:supabase
+```
+
+Jika Supabase sudah berisi data dan Anda memang ingin merge/upsert data lokal:
+
+```bash
+node scripts/migrate-local-data-to-supabase.js --force
 ```
 
 Jika variable Supabase tidak diisi, server otomatis kembali memakai `db/data.json` dan folder `uploads/`.
@@ -115,6 +129,8 @@ public/
   index.html
   styles.css
   app.js
+scripts/
+  migrate-local-data-to-supabase.js
 supabase/
   schema.sql
 ```
@@ -127,6 +143,9 @@ supabase/
 | POST | `/api/register` | Menyimpan pendaftaran baru |
 | GET | `/api/ranking` | Mengambil ranking peserta |
 | GET | `/api/status/:keyword` | Cek status dari nomor daftar atau NISN |
+| GET | `/bukti/:registrationNumber` | Bukti pendaftaran siap cetak |
+| POST | `/api/admin/login` | Login admin dan membuat token sesi |
+| GET | `/api/admin/me` | Cek sesi admin aktif |
 | GET | `/api/admin/applicants` | Data admin semua pendaftar |
 | GET | `/api/admin/applicants/:registrationNumber/documents/:documentKey` | Unduh dokumen pendaftar |
 | PATCH | `/api/admin/applicants/:registrationNumber` | Update nilai/status/catatan |
@@ -136,14 +155,13 @@ supabase/
 Endpoint admin membutuhkan header:
 
 ```text
-x-admin-password: adminppdb
+Authorization: Bearer token_dari_api_admin_login
 ```
 
 ## Catatan Produksi
 
 Versi ini sudah mendukung database dan storage Supabase. Untuk dipakai resmi oleh sekolah, sebaiknya tetap ditambahkan:
 
-- Login admin yang lebih aman dengan session/JWT.
 - Role admin/operator/verifikator.
 - Audit log perubahan data.
 - HTTPS dan backup database.

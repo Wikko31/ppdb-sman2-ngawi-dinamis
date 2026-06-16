@@ -148,15 +148,20 @@ input[type="file"] { padding: 11px; background: #f8fbfb; font-size: 0.92rem; }
 .document-missing { color: var(--muted); font-size: 0.88rem; font-weight: 700; }
 .form-actions { margin-top: 22px; }
 .form-message { min-height: 28px; margin: 18px 0 0; font-weight: 800; }
+.form-message .inline-link { text-decoration: underline; text-underline-offset: 3px; }
 .form-message.success { color: var(--success); }
 .form-message.error { color: var(--danger); }
 .search-row, .table-tools, .admin-login { display: flex; gap: 12px; align-items: center; }
+.admin-login { flex-wrap: wrap; }
+.admin-login input { min-width: 210px; }
 .status-box, .admin-panel { padding: 28px; }
 .status-result { margin-top: 20px; padding: 20px; border-radius: 18px; background: var(--soft-2); border: 1px solid var(--line); }
 .status-result.empty { color: var(--muted); }
 .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .status-grid div { padding: 14px; background: white; border: 1px solid var(--line); border-radius: 14px; }
 .status-grid strong { display: block; color: var(--muted); font-size: 0.82rem; }
+.proof-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.small-link { display: inline-block; margin-top: 6px; font-size: 0.88rem; }
 .status-diterima, .status-terverifikasi { background: rgba(22, 163, 74, 0.12); color: #15803d; }
 .status-menunggu-verifikasi, .status-cadangan { background: rgba(245, 158, 11, 0.14); color: #a16207; }
 .status-ditolak { background: rgba(220, 38, 38, 0.1); color: var(--danger); }

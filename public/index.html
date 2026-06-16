@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Sistem Penerimaan Murid Baru SMAN 2 Ngawi - pendaftaran, cek status, peringkat hasil tes dan nilai." />
   <title>PPDB SMAN 2 NGAWI</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260617" />
 </head>
 <body>
   <header class="site-header" id="top">
@@ -276,7 +276,8 @@
           <p class="lead">Masuk menggunakan kredensial admin untuk mengelola data pendaftaran.</p>
         </div>
         <div class="admin-login" id="adminLogin">
-          <input type="password" id="adminPassword" placeholder="Password admin" />
+          <input type="text" id="adminUsername" placeholder="Username admin" autocomplete="username" />
+          <input type="password" id="adminPassword" placeholder="Password admin" autocomplete="current-password" />
           <button class="btn btn-primary" id="adminLoginBtn">Masuk Admin</button>
         </div>
         <div class="admin-area hidden" id="adminArea">
@@ -338,6 +339,6 @@
   </footer>
 
   <div class="toast" id="toast"></div>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260617"></script>
 </body>
 </html>

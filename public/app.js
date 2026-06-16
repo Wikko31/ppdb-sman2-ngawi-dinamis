@@ -1,5 +1,6 @@
 const state = {
-  adminPassword: sessionStorage.getItem('ppdbAdminPassword') || '',
+  adminToken: sessionStorage.getItem('ppdbAdminToken') || '',
+  adminUsername: sessionStorage.getItem('ppdbAdminUsername') || '',
   rankingSearch: '',
   pathwayFilter: ''
 };
@@ -18,6 +19,7 @@ const selectors = {
   statusKeyword: document.querySelector('#statusKeyword'),
   checkStatusBtn: document.querySelector('#checkStatusBtn'),
   statusResult: document.querySelector('#statusResult'),
+  adminUsername: document.querySelector('#adminUsername'),
   adminPassword: document.querySelector('#adminPassword'),
   adminLoginBtn: document.querySelector('#adminLoginBtn'),
   adminLogin: document.querySelector('#adminLogin'),
@@ -51,6 +53,14 @@ function statusClass(status) {
   return `status-${String(status || '').toLowerCase().replaceAll(' ', '-')}`;
 }
 
+function proofUrl(registrationNumber) {
+  return `/bukti/${encodeURIComponent(registrationNumber)}`;
+}
+
+function adminAuthHeaders() {
+  return state.adminToken ? { Authorization: `Bearer ${state.adminToken}` } : {};
+}
+
 function showToast(message) {
   selectors.toast.textContent = message;
   selectors.toast.classList.add('show');
@@ -61,6 +71,12 @@ function setMessage(element, message, type = 'success') {
   element.textContent = message || '';
   element.classList.remove('success', 'error');
   if (message) element.classList.add(type);
+}
+
+function setMessageHtml(element, html, type = 'success') {
+  element.innerHTML = html || '';
+  element.classList.remove('success', 'error');
+  if (html) element.classList.add(type);
 }
 
 function updateAchievementRequirement() {
@@ -77,7 +93,7 @@ function updateAchievementRequirement() {
 
 async function api(path, options = {}) {
   const headers = {
-    ...(options.admin ? { 'x-admin-password': state.adminPassword } : {}),
+    ...(options.admin ? adminAuthHeaders() : {}),
     ...(options.headers || {})
   };
 
@@ -150,7 +166,11 @@ async function handleRegister(event) {
     });
 
     const number = result.applicant.registrationNumber;
-    setMessage(selectors.formMessage, `Pendaftaran dan dokumen berhasil dikirim. Nomor pendaftaran Anda: ${number}`, 'success');
+    setMessageHtml(
+      selectors.formMessage,
+      `Pendaftaran dan dokumen berhasil dikirim. Nomor pendaftaran Anda: <strong>${escapeHtml(number)}</strong>. <a class="inline-link" href="${proofUrl(number)}" target="_blank" rel="noopener">Cetak bukti pendaftaran</a>.`,
+      'success'
+    );
     selectors.registrationForm.reset();
     selectors.statusKeyword.value = number;
     await loadRanking();
@@ -187,6 +207,9 @@ async function checkStatus() {
         <div><strong>Status</strong><span class="status-chip ${statusClass(item.status)}">${escapeHtml(item.status)}</span></div>
         <div><strong>Catatan</strong>${escapeHtml(item.notes || '-')}</div>
       </div>
+      <div class="proof-actions">
+        <a class="btn btn-soft" href="${proofUrl(item.registrationNumber)}" target="_blank" rel="noopener">Cetak Bukti Pendaftaran</a>
+      </div>
     `;
   } catch (error) {
     selectors.statusResult.className = 'status-result empty';
@@ -195,22 +218,33 @@ async function checkStatus() {
 }
 
 async function loginAdmin() {
+  const username = selectors.adminUsername.value.trim();
   const password = selectors.adminPassword.value.trim();
-  if (!password) {
-    setMessage(selectors.adminMessage, 'Masukkan password admin terlebih dahulu.', 'error');
+  if (!username || !password) {
+    setMessage(selectors.adminMessage, 'Masukkan username dan password admin terlebih dahulu.', 'error');
     return;
   }
 
-  state.adminPassword = password;
   try {
+    const result = await api('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+    state.adminToken = result.token;
+    state.adminUsername = result.username;
+    sessionStorage.setItem('ppdbAdminToken', result.token);
+    sessionStorage.setItem('ppdbAdminUsername', result.username);
+    sessionStorage.removeItem('ppdbAdminPassword');
+    selectors.adminPassword.value = '';
     await loadAdmin();
-    sessionStorage.setItem('ppdbAdminPassword', password);
     selectors.adminLogin.classList.add('hidden');
     selectors.adminArea.classList.remove('hidden');
     setMessage(selectors.adminMessage, 'Berhasil masuk panel admin.', 'success');
   } catch (error) {
-    state.adminPassword = '';
-    sessionStorage.removeItem('ppdbAdminPassword');
+    state.adminToken = '';
+    state.adminUsername = '';
+    sessionStorage.removeItem('ppdbAdminToken');
+    sessionStorage.removeItem('ppdbAdminUsername');
     setMessage(selectors.adminMessage, error.message, 'error');
   }
 }
@@ -228,7 +262,7 @@ function renderAdmin(rows) {
 
   selectors.adminBody.innerHTML = rows.map(item => `
     <tr data-id="${escapeHtml(item.registrationNumber)}">
-      <td>${escapeHtml(item.registrationNumber)}<br><span class="muted-text">${escapeHtml(item.nisn)}</span></td>
+      <td>${escapeHtml(item.registrationNumber)}<br><span class="muted-text">${escapeHtml(item.nisn)}</span><br><a class="inline-link small-link" href="${proofUrl(item.registrationNumber)}" target="_blank" rel="noopener">Bukti</a></td>
       <td>${escapeHtml(item.name)}<br><span class="muted-text">${escapeHtml(item.pathway)}</span></td>
       <td><input type="number" min="0" max="100" step="0.01" data-field="testScore" value="${item.testScore ?? ''}" placeholder="0-100"></td>
       <td>
@@ -286,7 +320,7 @@ async function saveAdminRow(button) {
 async function exportCsv() {
   try {
     const response = await fetch('/api/admin/export', {
-      headers: { 'x-admin-password': state.adminPassword }
+      headers: adminAuthHeaders()
     });
     if (!response.ok) {
       const payload = await response.json();
@@ -313,7 +347,7 @@ async function downloadDocument(button) {
 
   try {
     const response = await fetch(`/api/admin/applicants/${encodeURIComponent(registrationNumber)}/documents/${encodeURIComponent(documentKey)}`, {
-      headers: { 'x-admin-password': state.adminPassword }
+      headers: adminAuthHeaders()
     });
 
     if (!response.ok) {
@@ -353,13 +387,17 @@ async function resetData() {
   }
 }
 
-function logoutAdmin() {
-  state.adminPassword = '';
+function logoutAdmin(message = 'Anda keluar dari panel admin.') {
+  state.adminToken = '';
+  state.adminUsername = '';
+  sessionStorage.removeItem('ppdbAdminToken');
+  sessionStorage.removeItem('ppdbAdminUsername');
   sessionStorage.removeItem('ppdbAdminPassword');
+  selectors.adminUsername.value = '';
   selectors.adminPassword.value = '';
   selectors.adminLogin.classList.remove('hidden');
   selectors.adminArea.classList.add('hidden');
-  setMessage(selectors.adminMessage, 'Anda keluar dari panel admin.', 'success');
+  setMessage(selectors.adminMessage, message, 'success');
 }
 
 function setupNavigation() {
@@ -415,6 +453,9 @@ function setupEvents() {
   });
 
   selectors.adminLoginBtn.addEventListener('click', loginAdmin);
+  selectors.adminUsername.addEventListener('keydown', event => {
+    if (event.key === 'Enter') loginAdmin();
+  });
   selectors.adminPassword.addEventListener('keydown', event => {
     if (event.key === 'Enter') loginAdmin();
   });
@@ -439,10 +480,20 @@ async function init() {
   setupEvents();
   await loadRanking();
 
-  if (state.adminPassword) {
+  sessionStorage.removeItem('ppdbAdminPassword');
+  if (state.adminUsername) {
+    selectors.adminUsername.value = state.adminUsername;
+  }
+
+  if (state.adminToken) {
+    const tokenAtInit = state.adminToken;
     selectors.adminLogin.classList.add('hidden');
     selectors.adminArea.classList.remove('hidden');
-    loadAdmin().catch(() => logoutAdmin());
+    loadAdmin().catch(() => {
+      if (state.adminToken === tokenAtInit) {
+        logoutAdmin('Sesi admin berakhir. Silakan masuk kembali.');
+      }
+    });
   }
 }
 
