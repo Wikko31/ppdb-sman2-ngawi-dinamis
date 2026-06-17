@@ -189,6 +189,7 @@ tr:last-child td { border-bottom: 0; }
 .faq-list { display: grid; gap: 14px; max-width: 850px; margin-inline: auto; }
 .faq-list details { padding: 20px 24px; }
 .faq-list summary { cursor: pointer; font-weight: 900; }
+.faq-list a, .contact-card a { color: var(--primary); font-weight: 900; text-decoration: underline; text-underline-offset: 3px; }
 .contact-section { background: linear-gradient(135deg, var(--primary-dark), #0f766e); color: white; }
 .contact-section .eyebrow { color: #99f6e4; }
 .contact-section p { color: rgba(255,255,255,0.82); }
