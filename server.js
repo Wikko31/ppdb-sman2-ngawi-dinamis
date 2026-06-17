@@ -4,6 +4,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { URL } = require('url');
+const QRCode = require('qrcode');
 
 const ROOT_DIR = __dirname;
 
@@ -928,9 +929,65 @@ function proofRow(label, value) {
   return `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value || '-')}</td></tr>`;
 }
 
-function renderProofDocument(applicant) {
+function makeProofVerificationCode(applicant) {
+  const source = [
+    applicant.registrationNumber,
+    applicant.nisn,
+    applicant.createdAt,
+    REGISTRATION_YEAR,
+    ADMIN_SESSION_SECRET
+  ].join('|');
+  const hash = crypto.createHash('sha256').update(source).digest('hex').slice(0, 12).toUpperCase();
+  return hash.match(/.{1,4}/g).join('-');
+}
+
+function makeQrSvg(text) {
+  const qr = QRCode.create(text, {
+    errorCorrectionLevel: 'M',
+    margin: 1
+  });
+  const size = qr.modules.size;
+  const cells = qr.modules.data;
+  const quietZone = 2;
+  const viewBoxSize = size + quietZone * 2;
+  const rects = [];
+
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      if (cells[row * size + col]) {
+        rects.push(`<rect x="${col + quietZone}" y="${row + quietZone}" width="1" height="1"/>`);
+      }
+    }
+  }
+
+  return [
+    `<svg class="qr-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBoxSize} ${viewBoxSize}" role="img" aria-label="QR verifikasi bukti pendaftaran">`,
+    '<rect width="100%" height="100%" fill="#fff"/>',
+    `<g fill="#102033">${rects.join('')}</g>`,
+    '</svg>'
+  ].join('');
+}
+
+function buildPublicUrl(req, pathname, searchParams = {}) {
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+  const localHost = host.includes('localhost') || host.includes('127.0.0.1') || host.includes('[::1]');
+  const proto = req.headers['x-forwarded-proto'] || (localHost ? 'http' : 'https');
+  const url = new URL(pathname, `${proto}://${host}`);
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, value);
+    }
+  }
+  return url.toString();
+}
+
+function renderProofDocument(applicant, proofUrl) {
   const publicData = publicApplicant(applicant);
   const documents = documentList(applicant.documents);
+  const issuedAt = new Date().toISOString();
+  const verificationCode = makeProofVerificationCode(applicant);
+  const verificationUrl = proofUrl || `/bukti/${encodeURIComponent(publicData.registrationNumber)}`;
+  const qrSvg = makeQrSvg(verificationUrl);
   const documentRows = documents.map(document => `
     <tr>
       <td>${escapeHtml(document.label)}</td>
@@ -948,28 +1005,52 @@ function renderProofDocument(applicant) {
   <style>
     @page { margin: 18mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; color: #102033; background: #f6faf9; line-height: 1.5; }
-    .page { width: min(900px, calc(100% - 32px)); margin: 32px auto; background: #fff; border: 1px solid #d9e6e3; border-radius: 18px; padding: 34px; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08); }
-    .toolbar { width: min(900px, calc(100% - 32px)); margin: 24px auto 0; display: flex; justify-content: flex-end; gap: 10px; }
+    body { margin: 0; font-family: Arial, sans-serif; color: #102033; background: #eef7f5; line-height: 1.5; }
+    .page { width: min(940px, calc(100% - 32px)); margin: 32px auto; background: #fff; border: 1px solid #cbded9; border-radius: 18px; padding: 34px; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08); }
+    .toolbar { width: min(940px, calc(100% - 32px)); margin: 24px auto 0; display: flex; justify-content: flex-end; gap: 10px; }
     .button { border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 700; cursor: pointer; text-decoration: none; color: #fff; background: #0f766e; }
-    .button.secondary { color: #102033; background: #fff; border: 1px solid #d9e6e3; }
-    header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 3px solid #0f766e; padding-bottom: 20px; margin-bottom: 24px; }
+    .button.secondary { color: #102033; background: #fff; border: 1px solid #cbded9; }
+    .letterhead { display: grid; grid-template-columns: 72px 1fr auto; gap: 18px; align-items: center; border-bottom: 3px double #0f766e; padding-bottom: 18px; margin-bottom: 22px; }
+    .logo { width: 72px; height: 72px; border-radius: 16px; display: grid; place-items: center; color: #fff; background: #0f766e; font-size: 28px; font-weight: 900; }
     .kicker { margin: 0 0 4px; color: #0f766e; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
-    h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-    .number { text-align: right; font-size: 13px; color: #65758b; }
-    .number strong { display: block; color: #102033; font-size: 20px; }
+    h1 { margin: 0; font-size: 27px; line-height: 1.15; text-transform: uppercase; }
+    .subtitle { margin: 5px 0 0; color: #516277; }
+    .number { text-align: right; font-size: 13px; color: #65758b; min-width: 210px; }
+    .number strong { display: block; color: #102033; font-size: 22px; }
     .status { display: inline-block; margin-top: 8px; border-radius: 999px; padding: 6px 10px; color: #0f766e; background: #e0f7f3; font-weight: 800; }
+    .document-title { text-align: center; margin: 22px 0 20px; }
+    .document-title h2 { margin: 0; font-size: 22px; text-decoration: underline; text-underline-offset: 5px; text-transform: uppercase; }
+    .document-title p { margin: 7px 0 0; color: #516277; }
+    .verification { display: grid; grid-template-columns: 1fr 170px; gap: 20px; padding: 18px; border: 1px solid #cbded9; border-radius: 14px; background: #f8fbfa; margin-bottom: 22px; }
+    .verification-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .verification-item { border-left: 4px solid #0f766e; padding-left: 12px; }
+    .verification-item span { display: block; color: #65758b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .verification-item strong, .verification-item a { color: #102033; font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+    .qr-card { text-align: center; align-self: start; }
+    .qr-svg { width: 148px; height: 148px; border: 1px solid #cbded9; border-radius: 10px; padding: 8px; background: #fff; }
+    .qr-caption { margin: 6px 0 0; color: #65758b; font-size: 11px; font-weight: 700; }
     .section { margin-top: 22px; }
-    h2 { margin: 0 0 10px; font-size: 17px; }
+    .section h2 { margin: 0 0 10px; font-size: 17px; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #d9e6e3; padding: 10px 12px; text-align: left; vertical-align: top; }
+    th, td { border: 1px solid #cbded9; padding: 10px 12px; text-align: left; vertical-align: top; }
     th { width: 34%; background: #f8fafc; color: #65758b; }
     .documents th { width: auto; }
-    footer { margin-top: 24px; color: #65758b; font-size: 12px; }
+    .signature { display: grid; grid-template-columns: 1fr 240px; gap: 24px; margin-top: 28px; color: #516277; font-size: 13px; }
+    .sign-box { text-align: center; color: #102033; }
+    .sign-space { height: 64px; }
+    footer { margin-top: 22px; color: #65758b; font-size: 12px; border-top: 1px solid #cbded9; padding-top: 12px; }
+    @media (max-width: 720px) {
+      .letterhead, .verification, .signature { grid-template-columns: 1fr; }
+      .number { text-align: left; }
+      .qr-card { text-align: left; }
+    }
     @media print {
       body { background: #fff; }
       .toolbar { display: none; }
       .page { width: 100%; margin: 0; border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+      .verification { break-inside: avoid; }
+      .section { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
     }
   </style>
 </head>
@@ -979,11 +1060,12 @@ function renderProofDocument(applicant) {
     <button class="button" type="button" onclick="window.print()">Cetak Bukti</button>
   </div>
   <main class="page">
-    <header>
+    <header class="letterhead">
+      <div class="logo">2N</div>
       <div>
-        <p class="kicker">Bukti Pendaftaran PPDB</p>
+        <p class="kicker">Sistem Penerimaan Murid Baru</p>
         <h1>${escapeHtml(SCHOOL_NAME)}</h1>
-        <p>Tahun pendaftaran ${escapeHtml(REGISTRATION_YEAR)}</p>
+        <p class="subtitle">Bukti pendaftaran elektronik tahun ${escapeHtml(REGISTRATION_YEAR)}</p>
       </div>
       <div class="number">
         Nomor Pendaftaran
@@ -991,6 +1073,40 @@ function renderProofDocument(applicant) {
         <span class="status">${escapeHtml(publicData.status)}</span>
       </div>
     </header>
+
+    <section class="document-title">
+      <h2>Bukti Pendaftaran PPDB</h2>
+      <p>Dokumen ini diterbitkan oleh sistem pendaftaran sebagai tanda bahwa data calon peserta didik telah diterima.</p>
+    </section>
+
+    <section class="verification">
+      <div class="verification-grid">
+        <div class="verification-item">
+          <span>Nomor Pendaftaran</span>
+          <strong>${escapeHtml(publicData.registrationNumber)}</strong>
+        </div>
+        <div class="verification-item">
+          <span>Kode Verifikasi</span>
+          <strong>${escapeHtml(verificationCode)}</strong>
+        </div>
+        <div class="verification-item">
+          <span>Waktu Pendaftaran</span>
+          <strong>${escapeHtml(formatDateTime(publicData.createdAt))}</strong>
+        </div>
+        <div class="verification-item">
+          <span>Waktu Terbit Bukti</span>
+          <strong>${escapeHtml(formatDateTime(issuedAt))}</strong>
+        </div>
+        <div class="verification-item">
+          <span>Alamat Verifikasi</span>
+          <a href="${escapeHtml(verificationUrl)}">${escapeHtml(verificationUrl)}</a>
+        </div>
+      </div>
+      <div class="qr-card">
+        ${qrSvg}
+        <p class="qr-caption">Pindai untuk membuka bukti</p>
+      </div>
+    </section>
 
     <section class="section">
       <h2>Data Calon Peserta Didik</h2>
@@ -1031,9 +1147,19 @@ function renderProofDocument(applicant) {
       </table>
     </section>
 
+    <section class="signature">
+      <p>
+        Bukti ini sah sebagai bukti pendaftaran elektronik. Keputusan verifikasi, penerimaan, dan daftar ulang tetap mengikuti pengumuman resmi panitia PPDB ${escapeHtml(SCHOOL_NAME)}.
+      </p>
+      <div class="sign-box">
+        <div>Panitia PPDB</div>
+        <div class="sign-space"></div>
+        <strong>${escapeHtml(SCHOOL_NAME)}</strong>
+      </div>
+    </section>
+
     <footer>
-      Bukti ini dibuat otomatis oleh sistem PPDB ${escapeHtml(SCHOOL_NAME)} pada ${escapeHtml(formatDateTime(new Date().toISOString()))}.
-      Simpan nomor pendaftaran untuk memantau status seleksi.
+      Dokumen otomatis. Simpan nomor pendaftaran dan kode verifikasi untuk memantau status seleksi.
     </footer>
   </main>
 </body>
@@ -1474,7 +1600,12 @@ async function serveRegistrationProof(req, res, url) {
     return sendText(res, 404, 'Data pendaftaran tidak ditemukan.');
   }
 
-  return sendText(res, 200, renderProofDocument(applicant), 'text/html; charset=utf-8');
+  const verificationCode = makeProofVerificationCode(applicant);
+  const proofUrl = buildPublicUrl(req, `/bukti/${encodeURIComponent(applicant.registrationNumber)}`, {
+    kode: verificationCode
+  });
+
+  return sendText(res, 200, renderProofDocument(applicant, proofUrl), 'text/html; charset=utf-8');
 }
 
 async function serveStatic(req, res, url) {
