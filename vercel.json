@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/bukti/:path*",
+      "destination": "/api/bukti/:path*"
+    }
+  ]
+}

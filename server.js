@@ -1533,14 +1533,23 @@ async function requestHandler(req, res) {
   }
 }
 
-ensureDb()
-  .then(() => {
-    http.createServer(requestHandler).listen(PORT, () => {
-      console.log(`PPDB ${SCHOOL_NAME} berjalan di http://localhost:${PORT}`);
-      console.log(`Username admin: ${ADMIN_USERNAME}`);
-    });
-  })
-  .catch(error => {
+async function startServer() {
+  await ensureDb();
+  http.createServer(requestHandler).listen(PORT, () => {
+    console.log(`PPDB ${SCHOOL_NAME} berjalan di http://localhost:${PORT}`);
+    console.log(`Username admin: ${ADMIN_USERNAME}`);
+  });
+}
+
+if (require.main === module) {
+  startServer().catch(error => {
     console.error('Gagal menyiapkan database:', error);
     process.exit(1);
   });
+}
+
+module.exports = {
+  ensureDb,
+  requestHandler,
+  startServer
+};

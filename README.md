@@ -85,6 +85,29 @@ node scripts/migrate-local-data-to-supabase.js --force
 
 Jika variable Supabase tidak diisi, server otomatis kembali memakai `db/data.json` dan folder `uploads/`.
 
+## Deploy ke Vercel
+
+Repository ini sudah disiapkan untuk Vercel melalui `vercel.json` dan serverless function `api/index.js`.
+
+1. Import repository GitHub ini di Vercel.
+2. Pilih framework **Other** jika Vercel meminta framework.
+3. Kosongkan build command jika tidak diperlukan.
+4. Isi environment variable berikut di Vercel Project Settings:
+
+```text
+SUPABASE_URL=https://project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=service_role_key_dari_supabase
+SUPABASE_STORAGE_BUCKET=ppdb-documents
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=password_admin_anda
+ADMIN_SESSION_SECRET=teks_rahasia_panjang
+ADMIN_SESSION_TTL_MS=28800000
+SCHOOL_NAME=SMAN 2 NGAWI
+REGISTRATION_YEAR=2026
+```
+
+Catatan: untuk deployment Vercel, gunakan Supabase sebagai database dan storage. Jangan mengandalkan `db/data.json` atau folder `uploads` untuk data produksi.
+
 ## Menyambungkan ke Tunnel
 
 ### LocalTunnel
@@ -123,6 +146,10 @@ ppdb-sman2-ngawi-dinamis/
 server.js
 package.json
 README.md
+api/
+  [...path].js
+  index.js
+  vercel-handler.js
 db/
   data.json
 public/
@@ -133,6 +160,7 @@ scripts/
   migrate-local-data-to-supabase.js
 supabase/
   schema.sql
+vercel.json
 ```
 
 ## API Utama
