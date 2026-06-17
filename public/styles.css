@@ -81,7 +81,9 @@ h3 { font-size: 1.22rem; }
 .btn-primary { background: linear-gradient(135deg, var(--primary), #14b8a6); color: white; box-shadow: 0 16px 34px rgba(15, 118, 110, 0.24); }
 .btn-soft { background: #e0f7f3; color: var(--primary-dark); }
 .btn-ghost { background: white; color: var(--ink); border: 1px solid var(--line); }
-.hero-note { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; color: #355064; font-weight: 800; font-size: 0.94rem; }
+.hero-note { display: none; }
+.official-pills { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; color: #355064; font-weight: 800; font-size: 0.94rem; }
+.official-pills span { border: 1px solid var(--line); background: rgba(255,255,255,0.78); border-radius: 999px; padding: 8px 12px; }
 .glass-card { border: 1px solid rgba(255, 255, 255, 0.72); background: rgba(255, 255, 255, 0.78); backdrop-filter: blur(20px); box-shadow: var(--shadow); }
 .hero-card { position: relative; border-radius: 34px; padding: 32px; min-height: 430px; }
 .admission-card-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 34px; }
@@ -93,6 +95,8 @@ h3 { font-size: 1.22rem; }
 .quota-list strong { color: var(--primary); font-size: 1.45rem; }
 .quota-list span { color: var(--muted); font-weight: 800; text-align: right; }
 .inline-link { color: var(--primary); font-weight: 900; }
+.hero-card .inline-link { display: none; }
+.official-link { color: var(--primary); font-weight: 900; }
 .hero-shape { position: absolute; border-radius: 999px; filter: blur(2px); opacity: 0.7; }
 .shape-one { width: 180px; height: 180px; bottom: 8%; left: 8%; background: rgba(20, 184, 166, 0.12); }
 .shape-two { width: 240px; height: 240px; right: 6%; top: 18%; background: rgba(245, 158, 11, 0.12); }
@@ -108,7 +112,8 @@ h3 { font-size: 1.22rem; }
   border: 1px solid var(--line); background: white; border-radius: var(--radius); box-shadow: 0 14px 44px rgba(15, 23, 42, 0.05);
 }
 .feature-card, .program-grid article { padding: 26px; }
-.icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px; background: var(--soft); font-size: 1.6rem; margin-bottom: 18px; }
+.icon { display: none; }
+.clean-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px; background: var(--soft); color: var(--primary-dark); font-weight: 950; font-size: 1rem; margin-bottom: 18px; }
 .feature-card p, .program-grid p, .steps p, .timeline p, .faq-list p { color: var(--muted); }
 .muted-section { background: var(--soft-2); }
 .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
@@ -137,6 +142,7 @@ input[type="file"] { padding: 11px; background: #f8fbfb; font-size: 0.92rem; }
 .document-fields { border: 0; border-top: 1px solid var(--line); padding: 22px 0 0; margin: 8px 0 0; }
 .document-fields legend { padding-right: 14px; font-size: 1.04rem; font-weight: 950; color: var(--ink); }
 .field-hint { margin: 6px 0 16px; color: var(--muted); font-weight: 700; line-height: 1.55; }
+.official-note { margin: 18px 0 0; color: var(--muted); font-weight: 800; }
 .document-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .optional-text { color: var(--muted); font-weight: 800; font-size: 0.86rem; }
 .document-links { display: grid; gap: 8px; min-width: 220px; }
@@ -190,9 +196,12 @@ tr:last-child td { border-bottom: 0; }
 .contact-card p { color: #334155; }
 .footer { padding: 26px 0; background: #0b1720; color: white; }
 .footer-inner { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
-.footer p { margin: 0; color: rgba(255,255,255,0.72); }
+.footer p { margin: 0; color: rgba(255,255,255,0.72); font-size: 0; }
+.footer p::before { content: "2026 PPDB SMAN 2 NGAWI. Sistem penerimaan murid baru."; font-size: 1rem; }
 .footer a { color: #99f6e4; font-weight: 900; }
 .back-to-top { position: fixed; right: 18px; bottom: 18px; z-index: 40; width: 46px; height: 46px; border: 0; border-radius: 999px; background: var(--primary); color: white; box-shadow: 0 18px 34px rgba(0,0,0,0.18); cursor: pointer; display: none; }
+.back-to-top { font-size: 0; }
+.back-to-top::before { content: "^"; font-size: 1rem; font-weight: 900; }
 .back-to-top.show { display: block; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: #0f172a; color: white; padding: 14px 18px; border-radius: 999px; box-shadow: 0 16px 40px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transition: 0.2s ease; z-index: 80; font-weight: 800; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
