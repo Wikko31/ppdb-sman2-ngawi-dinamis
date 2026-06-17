@@ -1548,8 +1548,8 @@ if (require.main === module) {
   });
 }
 
-module.exports = {
+module.exports = Object.assign(requestHandler, {
   ensureDb,
   requestHandler,
   startServer
-};
+});
