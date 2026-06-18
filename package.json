@@ -1,7 +1,7 @@
 {
-  "name": "ppdb-sman2-ngawi-dinamis",
+  "name": "ppdb-sman2-ngawi",
   "version": "1.0.0",
-  "description": "Website dinamis Sistem Penerimaan Murid Baru SMAN 2 Ngawi dengan fallback lokal dan dukungan Supabase.",
+  "description": "Portal Sistem Penerimaan Murid Baru SMAN 2 Ngawi dengan dukungan Supabase.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,7 +12,7 @@
     "ppdb",
     "sman-2-ngawi",
     "nodejs",
-    "web-dinamis"
+    "web-ppdb"
   ],
   "author": "",
   "license": "MIT",

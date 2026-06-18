@@ -1,6 +1,6 @@
-# Sistem Penerimaan Murid Baru SMAN 2 Ngawi - Web Dinamis
+# Sistem Penerimaan Murid Baru SMAN 2 Ngawi
 
-Website PPDB dinamis berbasis **Node.js native** tanpa dependency tambahan. Cocok untuk dipush ke GitHub, dijalankan di laptop, VPS, atau hosting Node.js lain.
+Portal PPDB berbasis **Node.js native** dengan dukungan Supabase untuk database dan storage dokumen. Cocok untuk dipush ke GitHub, dijalankan di laptop, VPS, atau hosting Node.js lain.
 
 Secara default data berjalan di file lokal `db/data.json`. Untuk hosting permanen, aplikasi bisa langsung memakai Supabase sebagai database dan storage dokumen.
 
@@ -10,7 +10,7 @@ Secara default data berjalan di file lokal `db/data.json`. Untuk hosting permane
 - Menu: Beranda, Alur, Jadwal, Persyaratan, Program, Daftar Sekarang, Cek Status, Peringkat, Admin, Kontak.
 - Form pendaftaran calon murid baru.
 - Nomor pendaftaran otomatis.
-- Data tersimpan dinamis di `db/data.json` atau Supabase.
+- Data tersimpan di `db/data.json` saat lokal atau Supabase saat hosting produksi.
 - Upload dokumen pendaftaran tersimpan di folder lokal atau Supabase Storage.
 - Cek status memakai nomor pendaftaran atau NISN.
 - Bukti pendaftaran dapat dibuka dan dicetak dari nomor pendaftaran.
@@ -25,7 +25,7 @@ Secara default data berjalan di file lokal `db/data.json`. Untuk hosting permane
 Pastikan Node.js sudah terpasang, minimal versi 18.
 
 ```bash
-cd ppdb-sman2-ngawi-dinamis
+cd ppdb-sman2-ngawi
 npm start
 ```
 
@@ -142,7 +142,7 @@ git push -u origin main
 ## Struktur Folder
 
 ```text
-ppdb-sman2-ngawi-dinamis/
+ppdb-sman2-ngawi/
 server.js
 package.json
 README.md
